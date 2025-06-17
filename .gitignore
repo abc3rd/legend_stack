@@ -18,3 +18,8 @@ nohup.out
 # System
 .DS_Store
 *Zone.Identifier
+venv/
+__pycache__/
+*.pyc
+*.log
+.DS_Store
