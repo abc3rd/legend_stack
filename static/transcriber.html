@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Transcriber - Text to JSON Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            min-height: 600px;
+        }
+
+        .input-section, .output-section {
+            padding: 30px;
+        }
+
+        .input-section {
+            border-right: 2px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+
+        .output-section {
+            background: #ffffff;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        textarea, input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+        }
+
+        textarea:focus, input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .provider-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .provider-btn {
+            padding: 12px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .provider-btn:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .provider-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-batch {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-batch:hover {
+            background: #218838;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .copy-btn {
+            position: relative;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loader.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #667eea;
+            color: white;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .input-section {
+                border-right: none;
+                border-bottom: 2px solid #e0e0e0;
+            }
+
+            .row {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #666;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 AI Transcriber</h1>
+            <p>Convert your text into AI-ready JSON formats for any provider</p>
+        </header>
+
+        <div class="main-content">
+            <div class="input-section">
+                <h2>📝 Input Configuration</h2>
+
+                <div class="form-group">
+                    <label for="provider">Select AI Provider</label>
+                    <div class="provider-grid">
+                        <button type="button" class="provider-btn active" data-provider="openai">OpenAI</button>
+                        <button type="button" class="provider-btn" data-provider="anthropic">Anthropic</button>
+                        <button type="button" class="provider-btn" data-provider="ollama">Ollama</button>
+                        <button type="button" class="provider-btn" data-provider="google">Google</button>
+                        <button type="button" class="provider-btn" data-provider="cohere">Cohere</button>
+                        <button type="button" class="provider-btn" data-provider="huggingface">HuggingFace</button>
+                        <button type="button" class="provider-btn" data-provider="generic">Generic</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="text">Your Text Input *</label>
+                    <textarea id="text" placeholder="Enter the text you want to convert to AI format...&#10;&#10;Example: Explain quantum computing in simple terms"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="system_message">System Message (Optional)</label>
+                    <textarea id="system_message" style="min-height: 80px;" placeholder="Optional system message or instructions...&#10;&#10;Example: You are a helpful physics teacher"></textarea>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label for="model">Model Name (Optional)</label>
+                        <input type="text" id="model" placeholder="e.g., gpt-4, claude-3-5-sonnet">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="temperature">Temperature</label>
+                        <input type="number" id="temperature" placeholder="0.0 - 2.0" min="0" max="2" step="0.1" value="0.7">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label for="max_tokens">Max Tokens (Optional)</label>
+                        <input type="number" id="max_tokens" placeholder="e.g., 1000" min="1">
+                    </div>
+
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <div style="padding-top: 12px;">
+                            <input type="checkbox" id="batch_mode" style="width: auto; margin-right: 8px;">
+                            <label for="batch_mode" style="display: inline; font-weight: normal;">Batch Mode (All Providers)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-primary" onclick="convertText()">🚀 Convert</button>
+                    <button class="btn-secondary" onclick="clearForm()">🗑️ Clear</button>
+                </div>
+
+                <div id="status"></div>
+            </div>
+
+            <div class="output-section">
+                <h2>
+                    📄 JSON Output
+                    <span class="badge" id="provider-badge">OpenAI</span>
+                </h2>
+
+                <div class="loader" id="loader">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 10px; color: #666;">Converting...</p>
+                </div>
+
+                <pre id="output">// Your converted JSON will appear here...\n\n// Click a provider button and enter your text, then click Convert!</pre>
+
+                <button class="btn-primary copy-btn" onclick="copyOutput()" id="copy-btn" style="display: none;">
+                    📋 Copy JSON
+                </button>
+            </div>
+        </div>
+
+        <footer>
+            <p>Built with ❤️ using FastAPI | <a href="/docs" target="_blank">API Documentation</a></p>
+        </footer>
+    </div>
+
+    <script>
+        let currentProvider = 'openai';
+
+        // Provider button handling
+        document.querySelectorAll('.provider-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentProvider = this.getAttribute('data-provider');
+                document.getElementById('provider-badge').textContent = currentProvider.charAt(0).toUpperCase() + currentProvider.slice(1);
+            });
+        });
+
+        async function convertText() {
+            const text = document.getElementById('text').value.trim();
+            const systemMessage = document.getElementById('system_message').value.trim();
+            const model = document.getElementById('model').value.trim();
+            const temperature = parseFloat(document.getElementById('temperature').value);
+            const maxTokens = document.getElementById('max_tokens').value.trim();
+            const batchMode = document.getElementById('batch_mode').checked;
+
+            if (!text) {
+                showStatus('Please enter some text to convert', 'error');
+                return;
+            }
+
+            // Show loader
+            document.getElementById('loader').classList.add('active');
+            document.getElementById('output').style.display = 'none';
+            document.getElementById('copy-btn').style.display = 'none';
+            document.getElementById('status').innerHTML = '';
+
+            try {
+                let response;
+                let url;
+                let body = {
+                    text: text
+                };
+
+                if (batchMode) {
+                    url = '/api/transcriber/convert/batch';
+                    body.providers = ['openai', 'anthropic', 'ollama', 'google', 'cohere', 'huggingface', 'generic'];
+                } else {
+                    url = '/api/transcriber/convert';
+                    body.provider = currentProvider;
+                }
+
+                if (model) body.model = model;
+                if (systemMessage) body.system_message = systemMessage;
+                if (!isNaN(temperature)) body.temperature = temperature;
+                if (maxTokens) body.max_tokens = parseInt(maxTokens);
+
+                response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Conversion failed');
+                }
+
+                const data = await response.json();
+
+                // Display result
+                let output;
+                if (batchMode) {
+                    output = JSON.stringify(data, null, 2);
+                } else {
+                    output = data.formatted_json || JSON.stringify(data.payload, null, 2);
+                }
+
+                document.getElementById('output').textContent = output;
+                document.getElementById('copy-btn').style.display = 'block';
+                showStatus('✅ Conversion successful!', 'success');
+
+            } catch (error) {
+                document.getElementById('output').textContent = `Error: ${error.message}`;
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('loader').classList.remove('active');
+                document.getElementById('output').style.display = 'block';
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('text').value = '';
+            document.getElementById('system_message').value = '';
+            document.getElementById('model').value = '';
+            document.getElementById('temperature').value = '0.7';
+            document.getElementById('max_tokens').value = '';
+            document.getElementById('batch_mode').checked = false;
+            document.getElementById('output').textContent = '// Your converted JSON will appear here...\n\n// Click a provider button and enter your text, then click Convert!';
+            document.getElementById('copy-btn').style.display = 'none';
+            document.getElementById('status').innerHTML = '';
+        }
+
+        function copyOutput() {
+            const output = document.getElementById('output').textContent;
+            navigator.clipboard.writeText(output).then(() => {
+                const btn = document.getElementById('copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                showStatus('Failed to copy: ' + err.message, 'error');
+            });
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        // Allow Enter key with Ctrl/Cmd to submit
+        document.getElementById('text').addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                convertText();
+            }
+        });
+    </script>
+</body>
+</html>
